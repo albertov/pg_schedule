@@ -48,15 +48,14 @@ Generates the set of timestamps belonging to a schedule between two timestamps.
 
 
 ```sql
-SELECT
+SELECT                                                                                                                                                                                         
   run_time,
   horizon,
-  base_time + ('1 hour'::interval * horizon) AS time
+  run_time + ('1 hour'::interval * horizon) AS time
 FROM 
   schedule_series('0 */6 * * *', (now() - '1 days'::interval), NOW()) run_time,
   generate_series(0, 6) horizon;
-
-       run_time         | horizon |          time          
+        run_time        | horizon |          time          
 ------------------------+---------+------------------------
  2017-04-09 12:00:00+00 |       0 | 2017-04-09 12:00:00+00
  2017-04-09 12:00:00+00 |       1 | 2017-04-09 13:00:00+00
@@ -95,5 +94,5 @@ FROM
  2017-04-10 12:00:00+00 |       6 | 2017-04-10 18:00:00+00
 (35 rows)
 
-Time: 0.678 ms
+Time: 0.373 ms
 ```
