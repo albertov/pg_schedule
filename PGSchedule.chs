@@ -10,7 +10,6 @@ import Foreign.Marshal.Alloc (free)
 import Foreign.Marshal.Array (newArray)
 import Data.ByteString.Unsafe (unsafePackCString)
 import qualified Data.Text.Encoding as T
-import System.IO
 import Sigym4.Dimension.CronSchedule
 import Sigym4.Dimension
 
@@ -121,7 +120,6 @@ pg_schedule_series s fromPtr toPtr resPtr countPtr = withSchedule s $ \sched -> 
              . takeWhile (<= dtTo)
              . map unQ
              $ idenumUp sched dtFrom
-  hPrint stderr (dtFrom, dtTo, series)
   poke resPtr =<< newArray series
   poke countPtr (fromIntegral (length series))
   return NO_ERROR
