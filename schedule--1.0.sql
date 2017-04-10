@@ -32,3 +32,27 @@ CREATE FUNCTION schedule_contains(schedule, timestamptz) RETURNS bool
     STRICT
     LANGUAGE C
     AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_next(schedule, timestamptz) RETURNS timestamptz
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_previous(schedule, timestamptz) RETURNS timestamptz
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_floor(schedule, timestamptz) RETURNS timestamptz
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_ceiling(schedule, timestamptz) RETURNS timestamptz
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
