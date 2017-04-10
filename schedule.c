@@ -49,6 +49,16 @@ static TimestampTz to_timestamptz(struct pg_tm tm)
 }
 
 
+static int
+_schedule_cmp(Datum a, Datum b)
+{
+  const char *sa = TextDatumGetCString(a);
+  const char *sb = TextDatumGetCString(b);
+  return strcmp(sa, sb);
+}
+
+
+
 PG_FUNCTION_INFO_V1(schedule_in);
 Datum
 schedule_in(PG_FUNCTION_ARGS)
@@ -172,4 +182,74 @@ schedule_series(PG_FUNCTION_ARGS)
     pg_schedule_free_series(srf->user_fctx);
     SRF_RETURN_DONE(srf);
   }
+}
+
+PG_FUNCTION_INFO_V1(schedule_lt);
+Datum
+schedule_lt(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) < 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_le);
+Datum
+schedule_le(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) <= 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_eq);
+Datum
+schedule_eq(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) == 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_ne);
+Datum
+schedule_ne(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) != 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_ge);
+Datum
+schedule_ge(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) >= 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_gt);
+Datum
+schedule_gt(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_BOOL(_schedule_cmp(arg1, arg2) > 0);
+}
+
+PG_FUNCTION_INFO_V1(schedule_cmp);
+Datum
+schedule_cmp(PG_FUNCTION_ARGS)
+{
+        Datum arg1 = PG_GETARG_DATUM(0);
+        Datum arg2 = PG_GETARG_DATUM(1);
+
+        PG_RETURN_INT32(_schedule_cmp(arg1, arg2));
 }

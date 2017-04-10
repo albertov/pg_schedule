@@ -70,3 +70,116 @@ CREATE FUNCTION schedule_series(schedule, timestamptz, timestamptz) RETURNS SETO
     LANGUAGE C
     COST 100
     AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_lt(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_le(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_eq(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_ne(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_ge(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_gt(schedule, schedule) RETURNS boolean
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_cmp(schedule, schedule) RETURNS integer
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';
+
+CREATE OPERATOR < (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = >,
+    NEGATOR = >=,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel,
+    PROCEDURE = schedule_lt
+);
+
+CREATE OPERATOR <= (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = >=,
+    NEGATOR = >,
+    RESTRICT = scalarltsel,
+    JOIN = scalarltjoinsel,
+    PROCEDURE = schedule_le
+);
+
+CREATE OPERATOR = (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = =,
+    NEGATOR = <>,
+    RESTRICT = eqsel,
+    JOIN = eqjoinsel,
+    HASHES,
+    MERGES,
+    PROCEDURE = schedule_eq
+);
+
+CREATE OPERATOR <> (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = <>,
+    NEGATOR = =,
+    RESTRICT = neqsel,
+    JOIN = neqjoinsel,
+    PROCEDURE = schedule_ne
+);
+
+CREATE OPERATOR >= (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = <=,
+    NEGATOR = <,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel,
+    PROCEDURE = schedule_ge
+);
+
+CREATE OPERATOR > (
+    LEFTARG = schedule,
+    RIGHTARG = schedule,
+    COMMUTATOR = <,
+    NEGATOR = <=,
+    RESTRICT = scalargtsel,
+    JOIN = scalargtjoinsel,
+    PROCEDURE = schedule_gt
+);
+
+CREATE OPERATOR CLASS schedule_ops
+    DEFAULT FOR TYPE schedule USING btree AS
+        OPERATOR        1       < ,
+        OPERATOR        2       <= ,
+        OPERATOR        3       = ,
+        OPERATOR        4       >= ,
+        OPERATOR        5       > ,
+        FUNCTION        1       schedule_cmp(schedule, schedule);
