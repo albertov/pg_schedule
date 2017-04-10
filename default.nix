@@ -24,6 +24,6 @@ stdenv.mkDerivation rec {
   meta = {
     description = "Cron schedule type for postgresql";
     homepage = https://github.com/albertov/pg_schedule;
-    license = stdenv.lib.licenses.bsd3;
+    license = stdenv.lib.licenses.mit;
   };
 }
