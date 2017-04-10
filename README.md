@@ -124,3 +124,30 @@ ORDER BY horizon ASC;
 
 Time: 7.524 ms
 ```
+
+The above query can be slow since the optimizer apparently
+can't figure out `schedule_floor` is constant and re-computes
+it for every row.  It be optmized as:
+
+```sql
+
+WITH closest_time AS (SELECT schedule_floor('0 * * * *', current_timestamp))
+SELECT
+  run_time,
+  horizon,
+  run_time + ('1 hour'::interval * horizon) AS time
+FROM 
+  schedule_series('0 */6 * * *', (now() - '3 days'::interval), current_timestamp) run_time,
+  generate_series(0, 36) horizon WHERE run_time + ('1 hour'::interval * horizon) = (SELECT * FROM closest_time) order by horizon asc;
+        run_time        | horizon |          time          
+------------------------+---------+------------------------
+ 2017-04-10 12:00:00+00 |       2 | 2017-04-10 14:00:00+00
+ 2017-04-10 06:00:00+00 |       8 | 2017-04-10 14:00:00+00
+ 2017-04-10 00:00:00+00 |      14 | 2017-04-10 14:00:00+00
+ 2017-04-09 18:00:00+00 |      20 | 2017-04-10 14:00:00+00
+ 2017-04-09 12:00:00+00 |      26 | 2017-04-10 14:00:00+00
+ 2017-04-09 06:00:00+00 |      32 | 2017-04-10 14:00:00+00
+(6 rows)
+
+Time: 0.597 ms
+```

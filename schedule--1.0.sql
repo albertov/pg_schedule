@@ -9,12 +9,14 @@ CREATE FUNCTION schedule_in(cstring) RETURNS schedule
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_out(schedule) RETURNS cstring
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE TYPE schedule (
@@ -31,34 +33,40 @@ CREATE FUNCTION schedule_contains(schedule, timestamptz) RETURNS bool
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_next(schedule, timestamptz) RETURNS timestamptz
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_previous(schedule, timestamptz) RETURNS timestamptz
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_floor(schedule, timestamptz) RETURNS timestamptz
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_ceiling(schedule, timestamptz) RETURNS timestamptz
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
 
 CREATE FUNCTION schedule_series(schedule, timestamptz, timestamptz) RETURNS SETOF timestamptz
     IMMUTABLE
     STRICT
     LANGUAGE C
+    COST 100
     AS 'MODULE_PATHNAME';
