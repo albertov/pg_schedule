@@ -56,3 +56,9 @@ CREATE FUNCTION schedule_ceiling(schedule, timestamptz) RETURNS timestamptz
     STRICT
     LANGUAGE C
     AS 'MODULE_PATHNAME';
+
+CREATE FUNCTION schedule_series(schedule, timestamptz, timestamptz) RETURNS SETOF timestamptz
+    IMMUTABLE
+    STRICT
+    LANGUAGE C
+    AS 'MODULE_PATHNAME';

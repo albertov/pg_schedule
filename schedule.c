@@ -1,4 +1,5 @@
 #include "postgres.h"
+#include "funcapi.h"
 #include "fmgr.h"
 #include "pgtime.h"
 #include "utils/builtins.h"
@@ -137,4 +138,38 @@ schedule_ceiling(PG_FUNCTION_ARGS)
   struct pg_tm result;
   CHECK_STATUS (pg_schedule_ceiling(s, tm, &result));
   PG_RETURN_TIMESTAMPTZ(to_timestamptz(result));
+}
+
+PG_FUNCTION_INFO_V1(schedule_series);
+Datum
+schedule_series(PG_FUNCTION_ARGS)
+{
+  FuncCallContext  *srf;
+
+  if (SRF_IS_FIRSTCALL()) {
+    Datum arg = PG_GETARG_DATUM(0);
+    char *s = TextDatumGetCString(arg);
+
+    pg_time_t pgtFrom = timestamptz_to_time_t(PG_GETARG_TIMESTAMPTZ(1));
+    struct pg_tm tmFrom = *pg_gmtime(&pgtFrom);
+
+    pg_time_t pgtTo = timestamptz_to_time_t(PG_GETARG_TIMESTAMPTZ(2));
+    struct pg_tm tmTo = *pg_gmtime(&pgtTo);
+
+    srf = SRF_FIRSTCALL_INIT();
+
+    srf->user_fctx = MemoryContextAlloc(srf->multi_call_memory_ctx, sizeof(struct pg_tm*));
+    CHECK_STATUS (pg_schedule_series(s, &tmFrom, &tmTo, &srf->user_fctx, &srf->max_calls));
+  }
+
+  srf = SRF_PERCALL_SETUP();
+
+  if (srf->call_cntr < srf->max_calls) {
+    struct pg_tm *times = (struct pg_tm *) srf->user_fctx;
+    Datum result = TimestampTzGetDatum(to_timestamptz(times[srf->call_cntr]));
+    SRF_RETURN_NEXT(srf, result);
+  } else {
+    pg_schedule_free_series(srf->user_fctx);
+    SRF_RETURN_DONE(srf);
+  }
 }

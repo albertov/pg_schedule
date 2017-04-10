@@ -6,8 +6,11 @@ import Foreign.C.Types
 import Foreign.C.String
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.Marshal.Alloc (free)
+import Foreign.Marshal.Array (newArray)
 import Data.ByteString.Unsafe (unsafePackCString)
 import qualified Data.Text.Encoding as T
+import System.IO
 import Sigym4.Dimension.CronSchedule
 import Sigym4.Dimension
 
@@ -109,3 +112,21 @@ pg_schedule_ceiling s dtPtr resPtr = withSchedule s $ \sched -> do
   let result = idceiling sched dt
   maybe (pure NO_RESULT) (\n -> poke resPtr (PGTime (unQ n)) >> pure NO_ERROR) result
 foreign export ccall pg_schedule_ceiling :: CString -> Ptr PGTime -> Ptr PGTime -> IO CInt
+
+pg_schedule_series :: CString -> Ptr PGTime -> Ptr PGTime -> Ptr (Ptr PGTime) -> Ptr CInt -> IO CInt
+pg_schedule_series s fromPtr toPtr resPtr countPtr = withSchedule s $ \sched -> do
+  PGTime dtFrom <- peek fromPtr
+  PGTime dtTo <- peek toPtr
+  let series = map PGTime
+             . takeWhile (<= dtTo)
+             . map unQ
+             $ idenumUp sched dtFrom
+  hPrint stderr (dtFrom, dtTo, series)
+  poke resPtr =<< newArray series
+  poke countPtr (fromIntegral (length series))
+  return NO_ERROR
+foreign export ccall pg_schedule_series :: CString -> Ptr PGTime -> Ptr PGTime -> Ptr (Ptr PGTime) -> Ptr CInt -> IO CInt
+
+pg_schedule_free_series :: Ptr PGTime -> IO ()
+pg_schedule_free_series = free
+foreign export ccall pg_schedule_free_series :: Ptr PGTime -> IO ()
