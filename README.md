@@ -44,7 +44,9 @@ Returns the next greater-than-or-equal timestamp from a schedule.
 
 Generates the set of timestamps belonging to a schedule between two timestamps.
 
-#### Example
+## Examples
+
+### Runtime, horizon and times from the last 24 hours
 
 
 ```sql
@@ -95,4 +97,30 @@ FROM
 (35 rows)
 
 Time: 0.373 ms
+```
+
+### Best choices for a (run_time, horizon) that covers current time
+
+
+```sql
+SELECT
+  run_time,
+  horizon,
+  run_time + ('1 hour'::interval * horizon) AS time
+FROM 
+  schedule_series('0 */6 * * *', (now() - '3 days'::interval), NOW()) run_time,
+  generate_series(0, 36) horizon
+WHERE run_time + ('1 hour'::interval * horizon) = schedule_floor('0 * * * *', now())
+ORDER BY horizon ASC;
+        run_time        | horizon |          time          
+------------------------+---------+------------------------
+ 2017-04-10 12:00:00+00 |       2 | 2017-04-10 14:00:00+00
+ 2017-04-10 06:00:00+00 |       8 | 2017-04-10 14:00:00+00
+ 2017-04-10 00:00:00+00 |      14 | 2017-04-10 14:00:00+00
+ 2017-04-09 18:00:00+00 |      20 | 2017-04-10 14:00:00+00
+ 2017-04-09 12:00:00+00 |      26 | 2017-04-10 14:00:00+00
+ 2017-04-09 06:00:00+00 |      32 | 2017-04-10 14:00:00+00
+(6 rows)
+
+Time: 7.524 ms
 ```
