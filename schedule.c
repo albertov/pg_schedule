@@ -1,49 +1,64 @@
 #include "postgres.h"
 #include "fmgr.h"
+#include "pgtime.h"
 #include "utils/builtins.h"
+#include "datatype/timestamp.h"
+#include "utils/timestamp.h"
+#include "PGSchedule_stub.h"
 
 PG_MODULE_MAGIC;
 
-PG_FUNCTION_INFO_V1(schedule_world);
-PG_FUNCTION_INFO_V1(schedule_text_arg);
-PG_FUNCTION_INFO_V1(schedule_ereport);
+typedef struct varlena scheduletype;
 
-Datum
-schedule_world(PG_FUNCTION_ARGS)
+
+#define DatumGetScheduleP(X)      ((scheduletype *) PG_DETOAST_DATUM(X))
+#define DatumGetSchedulePP(X)     ((scheduletype *) PG_DETOAST_DATUM_PACKED(X))
+#define SchedulePGetDatum(X)      PointerGetDatum(X)
+
+#define PG_GETARG_SCHEDULE_P(n)   DatumGetScheduleP(PG_GETARG_DATUM(n))
+#define PG_GETARG_SCHEDULE_PP(n)  DatumGetSchedulePP(PG_GETARG_DATUM(n))
+#define PG_RETURN_SCHEDULE_P(x)   PG_RETURN_POINTER(x)
+
+static void
+parse_schedule(const char *s)
 {
-	PG_RETURN_TEXT_P(cstring_to_text("Schedule, World!"));
+  if (!pg_schedule_parse((HsPtr*)s)) {
+    ereport(ERROR, (errcode(ERRCODE_INVALID_TEXT_REPRESENTATION),
+                    errmsg("invalid input syntax for type schedule"))); 
+  }
 }
 
+
+PG_FUNCTION_INFO_V1(schedule_in);
 Datum
-schedule_text_arg(PG_FUNCTION_ARGS)
+schedule_in(PG_FUNCTION_ARGS)
 {
-	text *schedule		= cstring_to_text("Schedule, ");
-	int32 schedule_sz	= VARSIZE(schedule) - VARHDRSZ;
+  char *s = PG_GETARG_CSTRING(0);
+  scheduletype *vardata;
 
-	text *name		= PG_GETARG_TEXT_P(0);
-	int32 name_sz	= VARSIZE(name) - VARHDRSZ;
-
-	text *tail		= cstring_to_text("!");
-	int32 tail_sz	= VARSIZE(tail) - VARHDRSZ;
-
-	int32 out_sz	= schedule_sz + name_sz + tail_sz + VARHDRSZ;
-	text *out		= (text *) palloc(out_sz);
-
-	SET_VARSIZE(out, out_sz);
-
-	memcpy(VARDATA(out), VARDATA(schedule), schedule_sz);
-	memcpy(VARDATA(out) + schedule_sz, VARDATA(name), name_sz);
-	memcpy(VARDATA(out) + schedule_sz + name_sz, VARDATA(tail), tail_sz);
-
-	PG_RETURN_TEXT_P(out);
+  parse_schedule(s);
+  vardata = (scheduletype *) cstring_to_text(s);
+  PG_RETURN_SCHEDULE_P(vardata);
 }
 
+PG_FUNCTION_INFO_V1(schedule_out);
 Datum
-schedule_ereport(PG_FUNCTION_ARGS)
+schedule_out(PG_FUNCTION_ARGS)
 {
-	ereport(ERROR,
-			(errcode(ERRCODE_NULL_VALUE_NOT_ALLOWED),
-			errmsg("null value not allowed")));
+  Datum arg = PG_GETARG_DATUM(0);
 
-	PG_RETURN_VOID();
+  PG_RETURN_CSTRING(TextDatumGetCString(arg));
+}
+
+PG_FUNCTION_INFO_V1(schedule_contains);
+Datum
+schedule_contains(PG_FUNCTION_ARGS)
+{
+  Datum arg = PG_GETARG_DATUM(0);
+  char *s = TextDatumGetCString(arg);
+  TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
+  pg_time_t pgt = timestamptz_to_time_t(dt);
+  struct pg_tm *tm = pg_gmtime(&pgt);
+
+  PG_RETURN_BOOL(pg_schedule_contains(s, tm)==1? TRUE : FALSE);
 }

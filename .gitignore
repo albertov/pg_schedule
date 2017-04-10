@@ -1,2 +1,4 @@
 *.sw?
 result
+*.chi
+*.chs.h

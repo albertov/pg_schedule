@@ -4,7 +4,7 @@
 }:
 
 let
-  ghc = haskellPackages.ghcWithPackages (p: with p; [ sigym4-dimension ]);
+  ghc = haskellPackages.ghcWithPackages (p: with p; [ sigym4-dimension c2hs ]);
 in
 stdenv.mkDerivation rec {
   version = "1.0";
