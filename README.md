@@ -2,6 +2,28 @@
 
 Provides a cron-formatted 'schedule' type for postgresql
 
+## Install
+
+### Nixos
+
+Clone this repo to /this/repo
+
+Add to `/etc/configuration.nix`:
+
+```nix
+  services.postgresql = {
+    enable = true;
+    ... other config
+    extraPlugins = [
+      (import /this/repo { postgresql = pkgs.postgresql95; }).pg_schedule
+          
+    ];
+  };
+```
+
+### Ubuntu
+
+TBD
 
 
 ## Functions
