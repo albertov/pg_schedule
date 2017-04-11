@@ -15,7 +15,7 @@ Add to `/etc/configuration.nix`:
     enable = true;
     ... other config
     extraPlugins = [
-      (import /this/repo { postgresql = pkgs.postgresql95; }).pg_schedule
+      (import /this/repo/release.nix { postgresql = pkgs.postgresql95; }).pg_schedule
           
     ];
   };
