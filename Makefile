@@ -1,9 +1,10 @@
 GHC = ghc
 C2HS = c2hs
-LIBS=-lHSrts_thr-ghc8.0.2
+LIBS=-lHSrts -lCffi -lrt
+
 PG_INCLUDE = $(shell pg_config --includedir-server)
 CFLAGS += -I$(PG_INCLUDE)
-GHCFLAGS  = $(CFLAGS) -Wall -O2 -dynamic
+GHCFLAGS  = $(CFLAGS)  -Wall -O2 -fPIC -optc-fPIC
 
 all: schedule.so
 
