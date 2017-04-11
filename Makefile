@@ -1,6 +1,6 @@
 GHC = ghc
 C2HS = c2hs
-LIBS=-lHSrts_thr -lCffi -lrt
+LIBS=-lHSrts_thr -lCffi
 
 PG_INCLUDE = $(shell pg_config --includedir-server)
 CFLAGS += -I$(PG_INCLUDE)

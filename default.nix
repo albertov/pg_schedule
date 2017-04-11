@@ -17,6 +17,7 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     mkdir -p $out/bin   # for buildEnv to setup proper symlinks
+    strip --strip-all schedule.so
     install -D schedule.so -t $out/lib/
     install -D ./{schedule--1.0.sql,schedule.control} -t $out/share/extension
   '';
