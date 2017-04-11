@@ -55,7 +55,7 @@ SELECT
   horizon,
   run_time + ('1 hour'::interval * horizon) AS time
 FROM 
-  schedule_series('0 */6 * * *', (CURRENT_TIMESTAMP) - '1 days'::interval), CURRENT_TIMESTAMP) run_time,
+  schedule_series('0 */6 * * *', (CURRENT_TIMESTAMP - '1 days'::interval), CURRENT_TIMESTAMP) run_time,
   generate_series(0, 6) horizon;
         run_time        | horizon |          time          
 ------------------------+---------+------------------------
