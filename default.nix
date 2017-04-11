@@ -1,6 +1,7 @@
 { stdenv
 , postgresql
 , haskellPackages
+, linkStatically ? false
 }:
 
 let
@@ -14,6 +15,10 @@ stdenv.mkDerivation rec {
   src = stdenv.lib.cleanSource ./.;
 
   buildInputs = [ postgresql ghc ];
+
+  buildPhase = ''
+    make LINK_STATICALLY="${if linkStatically then "YES" else "NO"}"
+  '';
 
   installPhase = ''
     mkdir -p $out/bin   # for buildEnv to setup proper symlinks

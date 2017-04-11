@@ -1,10 +1,16 @@
 GHC = ghc
 C2HS = c2hs
-LIBS=-lHSrts_thr -lCffi
+ifeq ($(LINK_STATICALLY),YES)
+  LIBS=-lHSrts_thr -lCffi
+  GHCFLAGS = -fPIC -optc-fPIC
+else
+  LIBS=-lHSrts_thr-ghc$(shell ghc --numeric-version)
+  GHCFLAGS=-dynamic
+endif
 
 PG_INCLUDE = $(shell pg_config --includedir-server)
 CFLAGS += -I$(PG_INCLUDE)
-GHCFLAGS  = $(CFLAGS)  -Wall -O2 -fPIC -optc-fPIC -split-objs
+GHCFLAGS += $(CFLAGS) -Wall -O2
 
 all: schedule.so
 
