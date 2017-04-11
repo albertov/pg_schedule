@@ -2,6 +2,14 @@
 
 Provides a cron-formatted 'schedule' type for postgresql
 
+WARNING: All calculations are done internally in UTC so a schedule
+like `0 0 * * *` will match every midnight on UTC which might not
+be what you want, eg: you wont be able to (easily) match the same
+time every day on localtime across DST changes.
+
+However, this behaviour is usually what you want for sensor readings,
+meteorological predictions, etc..
+
 ## Install
 
 ### Nixos
