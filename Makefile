@@ -1,10 +1,10 @@
 GHC = ghc
 C2HS = c2hs
-LIBS=-lHSrts -lCffi -lrt
+LIBS=-lHSrts_thr -lCffi -lrt
 
 PG_INCLUDE = $(shell pg_config --includedir-server)
 CFLAGS += -I$(PG_INCLUDE)
-GHCFLAGS  = $(CFLAGS)  -Wall -O2 -fPIC -optc-fPIC
+GHCFLAGS  = $(CFLAGS)  -Wall -O2 -fPIC -optc-fPIC -split-objs
 
 all: schedule.so
 
@@ -18,7 +18,7 @@ schedule.c: PGSchedule_stub.h
 	$(GHC) --make -shared $(GHCFLAGS) $^ -o $@ $(LIBS) -fforce-recomp
 
 %_stub.h:
-	$(GHC) --make -c $(GHCFLAGS) -O0 $<
+	$(GHC) --make -c $(CFLAGS) -O0 $<
 
 clean:
 	rm -rf *.o *.dyn_o *.hi *.dyn_hi *.so *_o_split *_stub.h .cabal-sandbox cabal.sandbox.config PGSchedule.hs
