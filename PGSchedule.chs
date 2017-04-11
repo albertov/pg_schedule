@@ -19,10 +19,7 @@ import Sigym4.Dimension
 
 {#enum PGScheduleError {} deriving (Eq,Show) #}
 
-
 newtype PGTime = PGTime UTCTime deriving Show
-
-{#pointer * pg_tm as PGTime nocode#}
 
 instance Storable PGTime where
   sizeOf _ = {#sizeof pg_tm #}
