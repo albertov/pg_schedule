@@ -18,7 +18,7 @@ Wether a timestamptz belongs to a schedule.
 
 Returns the next strictly greater-than timestamp from a schedule.
 
-### schedule_prev
+### schedule_previous
 
 `schedule_previous(schedule, timestamptz) RETURNS timestamptz`
 
@@ -55,7 +55,7 @@ SELECT
   horizon,
   run_time + ('1 hour'::interval * horizon) AS time
 FROM 
-  schedule_series('0 */6 * * *', (now() - '1 days'::interval), NOW()) run_time,
+  schedule_series('0 */6 * * *', (CURRENT_TIMESTAMP) - '1 days'::interval), CURRENT_TIMESTAMP) run_time,
   generate_series(0, 6) horizon;
         run_time        | horizon |          time          
 ------------------------+---------+------------------------
@@ -108,9 +108,9 @@ SELECT
   horizon,
   run_time + ('1 hour'::interval * horizon) AS time
 FROM 
-  schedule_series('0 */6 * * *', (now() - '3 days'::interval), NOW()) run_time,
+  schedule_series('0 */6 * * *', (CURRENT_TIMESTAMP - '3 days'::interval), CURRENT_TIMESTAMP) run_time,
   generate_series(0, 36) horizon
-WHERE run_time + ('1 hour'::interval * horizon) = schedule_floor('0 * * * *', now())
+WHERE run_time + ('1 hour'::interval * horizon) = schedule_floor('0 * * * *', CURRENT_TIMESTAMP)
 ORDER BY horizon ASC;
         run_time        | horizon |          time          
 ------------------------+---------+------------------------
@@ -125,9 +125,10 @@ ORDER BY horizon ASC;
 Time: 7.524 ms
 ```
 
-The above query can be slow since the optimizer apparently
-can't figure out `schedule_floor` is constant and re-computes
-it for every row.  It be optmized as:
+The above query can be slow since the query planner apparently
+can't figure out `schedule_floor(current_timestamp)` is constant
+for the duration of the transaction and re-computes it for every row. 
+It can be optimized as:
 
 ```sql
 
@@ -137,8 +138,10 @@ SELECT
   horizon,
   run_time + ('1 hour'::interval * horizon) AS time
 FROM 
-  schedule_series('0 */6 * * *', (now() - '3 days'::interval), current_timestamp) run_time,
-  generate_series(0, 36) horizon WHERE run_time + ('1 hour'::interval * horizon) = (SELECT * FROM closest_time) order by horizon asc;
+  schedule_series('0 */6 * * *', (CURRENT_TIMESTAMP - '3 days'::interval), CURRENT_TIMESTAMP) run_time,
+  generate_series(0, 36) horizon
+WHERE run_time + ('1 hour'::interval * horizon) = (SELECT * FROM closest_time)
+ORDER BY horizon ASC;
         run_time        | horizon |          time          
 ------------------------+---------+------------------------
  2017-04-10 12:00:00+00 |       2 | 2017-04-10 14:00:00+00

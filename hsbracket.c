@@ -8,11 +8,10 @@ static void pg_schedule_enter(void) __attribute__((constructor));
 static void pg_schedule_enter(void)
 {
   static char *argv[] = { "schedule.so", 0 }, **argv_ = argv;
-  char **args  = argv;
   static int argc = 1;
   RtsConfig conf = defaultRtsConfig;
   conf.rts_opts_enabled = RtsOptsAll;
-  hs_init_ghc(&argc, &args, conf);
+  hs_init_ghc(&argc, &argv_, conf);
   hs_add_root(__stginit_PGSchedule);
 }
 
