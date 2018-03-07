@@ -1,11 +1,12 @@
 { stdenv
 , postgresql
 , haskellPackages
+, c2hs ? haskellPackages.c2hs
 , linkStatically ? false
 }:
 
 let
-  ghc = haskellPackages.ghcWithPackages (p: with p; [ sigym4-dimension c2hs ]);
+  ghc = haskellPackages.ghcWithPackages (p: with p; [ sigym4-dimension ]);
 in
 stdenv.mkDerivation rec {
   version = "1.0";
@@ -14,7 +15,7 @@ stdenv.mkDerivation rec {
 
   src = stdenv.lib.cleanSource ./.;
 
-  buildInputs = [ postgresql ghc ];
+  buildInputs = [ postgresql ghc c2hs ];
 
   buildPhase = ''
     make LINK_STATICALLY="${if linkStatically then "YES" else "NO"}"
