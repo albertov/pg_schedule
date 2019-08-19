@@ -1,5 +1,5 @@
 MODULE_big = schedule
-OBJS = misc.o cron.o entry.o schedule.o $(WIN32RES)
+OBJS = ccronexpr.o schedule.o $(WIN32RES)
 
 EXTENSION = schedule
 DATA = schedule--1.0.sql

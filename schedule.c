@@ -7,7 +7,7 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 
-#include "cron.h"
+#include "ccronexpr.h"
 #include "schedule.h"
 
 PG_MODULE_MAGIC;
@@ -36,50 +36,6 @@ typedef struct varlena scheduletype;
   }
 
 
-static enum PGScheduleError pg_schedule_parse(char *s)
-{
-  if (parse_cron_entry(s))
-    return NO_ERROR;
-  return INVALID_SCHEDULE_FORMAT;
-}
-
-
-static enum PGScheduleError pg_schedule_contains(char *s, struct pg_tm *tm, int *contained)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_next(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_previous(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_floor(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_ceiling(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_series(char *s, struct pg_tm *tmFrom, struct pg_tm *tmTo, void *user_fctx, uint64 *max_calls)
-{
-  return NO_RESULT;
-}
-
-
 static void pg_schedule_free_series(void *user_fctx) {
 
 }
@@ -106,6 +62,68 @@ _schedule_cmp(Datum a, Datum b)
   return strcmp(sa, sb);
 }
 
+
+static enum PGScheduleError pg_schedule_parse(char *s)
+{
+  const char *error;
+  cron_expr target;
+  cron_parse_expr(s, &target, &error);
+  if (error)
+    return INVALID_SCHEDULE_FORMAT;
+  return NO_ERROR;
+}
+
+
+static enum PGScheduleError pg_schedule_contains(char *s, struct pg_tm *tm, int *contained)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_next(char *s, TimestampTz dt, TimestampTz *result)
+{
+  const char *error;
+  cron_expr target;
+  cron_parse_expr(s, &target, &error);
+  if (error)
+    return INVALID_SCHEDULE_FORMAT;
+  pg_time_t pgt = timestamptz_to_time_t(dt);
+  time_t next = cron_next(&target, pgt);
+  *result = time_t_to_timestamptz(next);
+  return NO_ERROR;
+}
+
+
+static enum PGScheduleError pg_schedule_previous(char *s, TimestampTz dt, TimestampTz *result)
+{
+  const char *error;
+  cron_expr target;
+  cron_parse_expr(s, &target, &error);
+  if (error)
+    return INVALID_SCHEDULE_FORMAT;
+  pg_time_t pgt = timestamptz_to_time_t(dt);
+  time_t next = cron_prev(&target, pgt);
+  *result = time_t_to_timestamptz(next);
+  return NO_ERROR;
+}
+
+
+static enum PGScheduleError pg_schedule_floor(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_ceiling(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_series(char *s, struct pg_tm *tmFrom, struct pg_tm *tmTo, void *user_fctx, uint64 *max_calls)
+{
+  return NO_RESULT;
+}
 
 
 PG_FUNCTION_INFO_V1(schedule_in);
@@ -150,11 +168,9 @@ schedule_next(PG_FUNCTION_ARGS)
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
   TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  struct pg_tm *tm = pg_gmtime(&pgt);
-  struct pg_tm result;
-  CHECK_STATUS (pg_schedule_next(s, tm, &result));
-  PG_RETURN_TIMESTAMPTZ(to_timestamptz(result));
+  TimestampTz result;
+  CHECK_STATUS (pg_schedule_next(s, dt, &result));
+  PG_RETURN_TIMESTAMPTZ(result);
 }
 
 PG_FUNCTION_INFO_V1(schedule_previous);
@@ -164,11 +180,9 @@ schedule_previous(PG_FUNCTION_ARGS)
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
   TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  struct pg_tm *tm = pg_gmtime(&pgt);
-  struct pg_tm result;
-  CHECK_STATUS (pg_schedule_previous(s, tm, &result));
-  PG_RETURN_TIMESTAMPTZ(to_timestamptz(result));
+  TimestampTz result;
+  CHECK_STATUS (pg_schedule_previous(s, dt, &result));
+  PG_RETURN_TIMESTAMPTZ(result);
 }
 
 PG_FUNCTION_INFO_V1(schedule_floor);
