@@ -7,6 +7,7 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 
+#include "cron.h"
 #include "schedule.h"
 
 PG_MODULE_MAGIC;
@@ -37,7 +38,9 @@ typedef struct varlena scheduletype;
 
 static enum PGScheduleError pg_schedule_parse(char *s)
 {
-  return NO_RESULT;
+  if (parse_cron_entry(s))
+    return NO_ERROR;
+  return INVALID_SCHEDULE_FORMAT;
 }
 
 
