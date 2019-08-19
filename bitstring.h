@@ -20,6 +20,9 @@
  *	@(#)bitstring.h	5.2 (Berkeley) 4/4/90
  */
 
+#ifndef BITSTRING_H
+#define BITSTRING_H
+
 typedef	unsigned char bitstr_t;
 
 /* internal macros */
@@ -120,3 +123,5 @@ typedef	unsigned char bitstr_t;
 		} \
 	*(value) = _value; \
 }
+
+#endif
