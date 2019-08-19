@@ -40,7 +40,7 @@ TBD
 
 `schedule_contains(schedule, timestamptz) RETURNS bool`
 
-Wether a timestamptz belongs to a schedule.
+Whether a timestamptz belongs to a schedule.
 
 ### schedule_next
 
@@ -73,6 +73,21 @@ Returns the next greater-than-or-equal timestamp from a schedule.
 
 
 Generates the set of timestamps belonging to a schedule between two timestamps.
+
+### schedule_range_next
+`schedule_range_next(start_schedule, stop_schedule, timestamptz) RETURNS tstzrange`
+
+Returns the tstzrange from the next start_schedule and the subsequent stop_schedule.
+
+### schedule_range_previous
+`schedule_range_previous(start_schedule, stop_schedule, timestamptz) RETURNS tstzrange`
+
+Returns the last completed tstzrange.
+
+### schedule_range_contains
+`schedule_range_contains(start_schedule, stop_schedule, timestamptz) RETURNS bool`
+
+Whether a timestamptz is between a start and a stop.
 
 ## Examples
 
@@ -184,3 +199,54 @@ ORDER BY horizon ASC;
 
 Time: 0.597 ms
 ```
+
+Range examples
+
+```sql
+create table light as (
+id varchar,
+on schedule,
+off schedule);
+
+INSERT INTO light (id, on, off) values ('Living room', '10 19 * * *', '0 02 * * *');
+```
+Are the lights turned on now?
+```sql
+SELECT
+  schedule_range_contains(on, off, NOW())
+FROM
+  light
+WHERE
+  id = 'Living room';
+```
+Let parameters switch place instead of negating output  
+Are the lights turned off now?
+```sql
+SELECT
+  schedule_range_contains(off, on, NOW())
+FROM
+  light
+WHERE
+  id = 'Living room';
+```
+
+When will the lights be turned on?
+```sql
+SELECT
+  schedule_range_next(on, off, NOW());
+FROM
+  light
+WHERE
+  id = 'Living room';
+```
+
+When were the lights turned off?
+```sql
+SELECT
+  schedule_range_previous(on, off, NOW());
+FROM
+  light
+WHERE
+  id = 'Living room';
+```
+
