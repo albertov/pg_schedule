@@ -7,7 +7,6 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 
-#include "PGSchedule_stub.h"
 #include "schedule.h"
 
 PG_MODULE_MAGIC;
@@ -34,6 +33,53 @@ typedef struct varlena scheduletype;
   case NO_RESULT:                                                        \
       PG_RETURN_NULL();                                                  \
   }
+
+
+static enum PGScheduleError pg_schedule_parse(char *s)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_contains(char *s, struct pg_tm *tm, int *contained)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_next(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_previous(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_floor(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_ceiling(char *s, struct pg_tm *tm, struct pg_tm *result)
+{
+  return NO_RESULT;
+}
+
+
+static enum PGScheduleError pg_schedule_series(char *s, struct pg_tm *tmFrom, struct pg_tm *tmTo, void *user_fctx, uint64 *max_calls)
+{
+  return NO_RESULT;
+}
+
+
+static void pg_schedule_free_series(void *user_fctx) {
+
+}
 
 
 static TimestampTz to_timestamptz(struct pg_tm tm)
@@ -66,7 +112,7 @@ schedule_in(PG_FUNCTION_ARGS)
   char *s = PG_GETARG_CSTRING(0);
   scheduletype *vardata;
 
-  CHECK_STATUS (pg_schedule_parse((HsPtr*)s))
+  CHECK_STATUS (pg_schedule_parse(s))
   vardata = (scheduletype *) cstring_to_text(s);
   PG_RETURN_SCHEDULE_P(vardata);
 }
@@ -91,7 +137,7 @@ schedule_contains(PG_FUNCTION_ARGS)
   struct pg_tm *tm = pg_gmtime(&pgt);
   int contained;
   CHECK_STATUS (pg_schedule_contains(s, tm, &contained));
-  PG_RETURN_BOOL(contained==1? TRUE : FALSE);
+  PG_RETURN_BOOL(contained==1? true : false);
 }
 
 PG_FUNCTION_INFO_V1(schedule_next);
