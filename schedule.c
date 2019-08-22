@@ -35,25 +35,6 @@ typedef struct varlena scheduletype;
       PG_RETURN_NULL();                                                  \
   }
 
-
-static void pg_schedule_free_series(void *user_fctx) {
-
-}
-
-
-static TimestampTz to_timestamptz(struct pg_tm tm)
-{
-  tm.tm_mon += 1;
-  tm.tm_year += 1900;
-  Timestamp result;
-  if (tm2timestamp(&tm, 0, NULL, &result) != 0) {
-      ereport(ERROR, (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
-                      errmsg("timestamp is out of range"))); 
-  }
-  return (TimestampTz) result;
-}
-
-
 static int
 _schedule_cmp(Datum a, Datum b)
 {
@@ -62,69 +43,51 @@ _schedule_cmp(Datum a, Datum b)
   return strcmp(sa, sb);
 }
 
+static enum PGScheduleError pg_schedule_parse_opt(char *s, cron_expr *target)
+{
+  const char *error;
+  cron_parse_expr(s, target, &error);
+  if (error)
+    return INVALID_SCHEDULE_FORMAT;
+  return NO_ERROR;
+}
 
 static enum PGScheduleError pg_schedule_parse(char *s)
 {
-  const char *error;
   cron_expr target;
-  cron_parse_expr(s, &target, &error);
-  if (error)
-    return INVALID_SCHEDULE_FORMAT;
-  return NO_ERROR;
+  return pg_schedule_parse_opt(s, &target);
 }
-
 
 static enum PGScheduleError pg_schedule_contains(char *s, struct pg_tm *tm, int *contained)
 {
+  ereport(ERROR, (errcode(ERRCODE_ASSERT_FAILURE),        \
+                    errmsg("invalid input syntax for type schedule")));
   return NO_RESULT;
 }
-
 
 static enum PGScheduleError pg_schedule_next(char *s, TimestampTz dt, TimestampTz *result)
 {
-  const char *error;
   cron_expr target;
-  cron_parse_expr(s, &target, &error);
-  if (error)
-    return INVALID_SCHEDULE_FORMAT;
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  time_t next = cron_next(&target, pgt);
-  *result = time_t_to_timestamptz(next);
+  time_t time;
+  pg_schedule_parse_opt(s, &target);
+  time = cron_next(&target, timestamptz_to_time_t(dt));
+  if (time == -1)
+    return NOT_IN_SCHEDULE;
+  *result = time_t_to_timestamptz(time);
   return NO_ERROR;
 }
-
 
 static enum PGScheduleError pg_schedule_previous(char *s, TimestampTz dt, TimestampTz *result)
 {
-  const char *error;
   cron_expr target;
-  cron_parse_expr(s, &target, &error);
-  if (error)
-    return INVALID_SCHEDULE_FORMAT;
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  time_t next = cron_prev(&target, pgt);
-  *result = time_t_to_timestamptz(next);
+  time_t time;
+  pg_schedule_parse_opt(s, &target);
+  time = cron_prev(&target, timestamptz_to_time_t(dt));
+  if (time == -1)
+    return NOT_IN_SCHEDULE;
+  *result = time_t_to_timestamptz(time);
   return NO_ERROR;
 }
-
-
-static enum PGScheduleError pg_schedule_floor(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_ceiling(char *s, struct pg_tm *tm, struct pg_tm *result)
-{
-  return NO_RESULT;
-}
-
-
-static enum PGScheduleError pg_schedule_series(char *s, struct pg_tm *tmFrom, struct pg_tm *tmTo, void *user_fctx, uint64 *max_calls)
-{
-  return NO_RESULT;
-}
-
 
 PG_FUNCTION_INFO_V1(schedule_in);
 Datum
@@ -167,10 +130,10 @@ schedule_next(PG_FUNCTION_ARGS)
 {
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
-  TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  TimestampTz result;
-  CHECK_STATUS (pg_schedule_next(s, dt, &result));
-  PG_RETURN_TIMESTAMPTZ(result);
+  TimestampTz ts_in = PG_GETARG_TIMESTAMPTZ(1);
+  TimestampTz ts_out;
+  CHECK_STATUS (pg_schedule_next(s, ts_in, &ts_out));
+  PG_RETURN_TIMESTAMPTZ(ts_out);
 }
 
 PG_FUNCTION_INFO_V1(schedule_previous);
@@ -179,10 +142,10 @@ schedule_previous(PG_FUNCTION_ARGS)
 {
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
-  TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  TimestampTz result;
-  CHECK_STATUS (pg_schedule_previous(s, dt, &result));
-  PG_RETURN_TIMESTAMPTZ(result);
+  TimestampTz ts_in = PG_GETARG_TIMESTAMPTZ(1);
+  TimestampTz ts_out;
+  CHECK_STATUS (pg_schedule_previous(s, ts_in, &ts_out));
+  PG_RETURN_TIMESTAMPTZ(ts_out);
 }
 
 PG_FUNCTION_INFO_V1(schedule_floor);
@@ -191,12 +154,15 @@ schedule_floor(PG_FUNCTION_ARGS)
 {
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
-  TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  struct pg_tm *tm = pg_gmtime(&pgt);
-  struct pg_tm result;
-  CHECK_STATUS (pg_schedule_floor(s, tm, &result));
-  PG_RETURN_TIMESTAMPTZ(to_timestamptz(result));
+  TimestampTz ts_in = PG_GETARG_TIMESTAMPTZ(1);
+  TimestampTz ts_out1;
+  TimestampTz ts_out2;
+  CHECK_STATUS (pg_schedule_previous(s, ts_in, &ts_out1));
+  CHECK_STATUS (pg_schedule_next(s, ts_in, &ts_out2));
+  if (ts_out2 == ts_in)
+    PG_RETURN_TIMESTAMPTZ(ts_out2);
+  else
+    PG_RETURN_TIMESTAMPTZ(ts_out1);
 }
 
 PG_FUNCTION_INFO_V1(schedule_ceiling);
@@ -205,45 +171,52 @@ schedule_ceiling(PG_FUNCTION_ARGS)
 {
   Datum arg = PG_GETARG_DATUM(0);
   char *s = TextDatumGetCString(arg);
-  TimestampTz dt = PG_GETARG_TIMESTAMPTZ(1);
-  pg_time_t pgt = timestamptz_to_time_t(dt);
-  struct pg_tm *tm = pg_gmtime(&pgt);
-  struct pg_tm result;
-  CHECK_STATUS (pg_schedule_ceiling(s, tm, &result));
-  PG_RETURN_TIMESTAMPTZ(to_timestamptz(result));
+  TimestampTz ts_in = PG_GETARG_TIMESTAMPTZ(1);
+  TimestampTz ts_out1;
+  TimestampTz ts_out2;
+  CHECK_STATUS (pg_schedule_next(s, ts_in, &ts_out1));
+  CHECK_STATUS (pg_schedule_previous(s, ts_in, &ts_out2));
+  if (ts_out2 == ts_in)
+    PG_RETURN_TIMESTAMPTZ(ts_out2);
+  else
+    PG_RETURN_TIMESTAMPTZ(ts_out1);
 }
+
+struct schedule_series_ctx {
+  cron_expr target;
+  TimestampTz ts;
+  TimestampTz ts_to;
+};
 
 PG_FUNCTION_INFO_V1(schedule_series);
 Datum
 schedule_series(PG_FUNCTION_ARGS)
 {
   FuncCallContext  *srf;
+  struct schedule_series_ctx *ctx;
+  TimestampTz ts;
+  Datum result;
 
   if (SRF_IS_FIRSTCALL()) {
     Datum arg = PG_GETARG_DATUM(0);
     char *s = TextDatumGetCString(arg);
-
-    pg_time_t pgtFrom = timestamptz_to_time_t(PG_GETARG_TIMESTAMPTZ(1));
-    struct pg_tm tmFrom = *pg_gmtime(&pgtFrom);
-
-    pg_time_t pgtTo = timestamptz_to_time_t(PG_GETARG_TIMESTAMPTZ(2));
-    struct pg_tm tmTo = *pg_gmtime(&pgtTo);
-
     srf = SRF_FIRSTCALL_INIT();
-
-    srf->user_fctx = MemoryContextAlloc(srf->multi_call_memory_ctx, sizeof(struct pg_tm*));
-    CHECK_STATUS (pg_schedule_series(s, &tmFrom, &tmTo, &srf->user_fctx, &srf->max_calls));
+    srf->user_fctx = MemoryContextAlloc(srf->multi_call_memory_ctx, sizeof(struct schedule_series_ctx));
+    ctx = (struct schedule_series_ctx *) srf->user_fctx;
+    ctx->ts = PG_GETARG_TIMESTAMPTZ(1);
+    ctx->ts_to = PG_GETARG_TIMESTAMPTZ(2);
+    pg_schedule_parse_opt(s, &(ctx->target));
   }
 
   srf = SRF_PERCALL_SETUP();
-
-  if (srf->call_cntr < srf->max_calls) {
-    struct pg_tm *times = (struct pg_tm *) srf->user_fctx;
-    Datum result = TimestampTzGetDatum(to_timestamptz(times[srf->call_cntr]));
-    SRF_RETURN_NEXT(srf, result);
-  } else {
-    pg_schedule_free_series(srf->user_fctx);
+  ctx = (struct schedule_series_ctx *) srf->user_fctx;
+  ts = time_t_to_timestamptz(cron_next(&(ctx->target), timestamptz_to_time_t(ctx->ts)));
+  if (ts > ctx->ts_to) {
     SRF_RETURN_DONE(srf);
+  } else {
+    result = TimestampTzGetDatum(ts);
+    ctx->ts = ts;
+    SRF_RETURN_NEXT(srf, result);
   }
 }
 
