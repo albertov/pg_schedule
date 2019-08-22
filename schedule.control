@@ -2,4 +2,4 @@
 comment = 'Cron-formatted schedule type for PostgreSQL'
 default_version = '1.0'
 module_pathname = '$libdir/schedule'
-relocatable = true
+relocatable = false
